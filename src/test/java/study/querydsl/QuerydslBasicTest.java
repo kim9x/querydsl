@@ -27,7 +27,8 @@ public class QuerydslBasicTest {
 	@Autowired
 	EntityManager em;
 	
-	JPAQueryFactory queryFactory;
+	JPAQueryFactory queryFactory = new JPAQueryFactory(em);
+	
 	
 	@BeforeEach
 	public void before() {
@@ -160,6 +161,34 @@ public class QuerydslBasicTest {
 		 assertThat(memberNull.getUsername()).isNull();
 	}
 	
+	@Test
+	public void paging1() {
+		queryFactory = new JPAQueryFactory(em);
+		List<Member> result = queryFactory
+			.selectFrom(member)
+			.orderBy(member.username.desc())
+			.offset(1)
+			.limit(2)
+			.fetch();
+		
+		assertThat(result.size()).isEqualTo(2);
+	}
+	
+	@Test
+	public void paging2() {
+		queryFactory = new JPAQueryFactory(em);
+		QueryResults<Member> fetchResults = queryFactory
+			.selectFrom(member)
+			.orderBy(member.username.desc())
+			.offset(1)
+			.limit(2)
+			.fetchResults();
+		
+		assertThat(fetchResults.getTotal()).isEqualTo(4);
+		assertThat(fetchResults.getLimit()).isEqualTo(2);
+		assertThat(fetchResults.getOffset()).isEqualTo(1);
+		assertThat(fetchResults.getResults().size()).isEqualTo(2);
+	}
 	
 
 }
