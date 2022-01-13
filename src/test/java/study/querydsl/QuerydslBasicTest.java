@@ -74,5 +74,34 @@ public class QuerydslBasicTest {
 		assertThat(findMember.getUsername()).isEqualTo("member1");
 	}
 	
+	@Test
+	public void search() {
+		queryFactory = new JPAQueryFactory(em);
+		
+		Member findMember = queryFactory
+			.selectFrom(member)
+			.where(member.username.eq("member1")
+					.and(member.age.eq(10)))
+			.fetchOne();
+		
+		assertThat(findMember.getUsername()).isEqualTo("member1");
+	}
+	
+	@Test
+	public void searchAndParam() {
+		queryFactory = new JPAQueryFactory(em);
+		
+		Member findMember = queryFactory
+			.selectFrom(member)
+			.where(member.username.eq("member1")
+					// .and로 체인을 거는 경우
+					// ,로 처리할 수도 있다.
+					, (member.age.eq(10)))
+			.fetchOne();
+		
+		assertThat(findMember.getUsername()).isEqualTo("member1");
+	}
+	
+	
 
 }
