@@ -20,10 +20,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
+import study.querydsl.dto.MemberDto;
+import study.querydsl.dto.UserDto;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
 import study.querydsl.entity.Team;
@@ -528,6 +533,91 @@ public class QuerydslBasicTest {
 			Integer age = tuple.get(member.age);
 			System.out.println("username = " + username);
 			System.out.println("age = " + age);
+		}
+	}
+	
+	@Test
+	public void findDtoByJPQL() {
+		List<MemberDto> result = em.createQuery("select new study.querydsl.dto.MemberDto(m.username, m.age) from Member m", MemberDto.class)
+			.getResultList();
+		
+		for (MemberDto memberDto : result) {
+			System.out.println("memberDto = " + memberDto);
+		}
+	}
+	
+	@Test
+	// Projections.bean 방식은 setter에 값이 들어감.
+	// 즉, DTO에 setter가 없으면 안된다.
+	// @Data 어노테이션엔 '@Setter'가 포함되어있음.
+	public void findDtoBySetter() {
+		List<MemberDto> result = queryFactory
+			.select(Projections.bean(MemberDto.class,
+					member.username,
+					member.age))
+			.from(member)
+			.fetch();
+		
+		for (MemberDto memberDto : result) {
+			System.out.println("memberDto = " + memberDto);
+		}
+	}
+	
+	
+	@Test
+	// Projections.fields 방식은 해당 필드 변수에 값이 바로 들어감.
+	// setter 등이 필요 없다.
+	// 그러나 field 명이 서로 일치해야된다.
+	public void findDtoByField() {
+		List<MemberDto> result = queryFactory
+			.select(Projections.fields(MemberDto.class,
+					member.username,
+					member.age))
+			.from(member)
+			.fetch();
+		
+		for (MemberDto memberDto : result) {
+			System.out.println("memberDto = " + memberDto);
+		}
+	}
+	
+	@Test
+	// Projections.fields 방식은 해당 필드 변수에 값이 바로 들어감.
+	// setter 등이 필요 없다.
+	// 그러나 field 명이 서로 일치해야된다.
+	// 만약 일치하지 않는다면 member.username.as("name") 처럼
+	// .as를 사용하여 처리해주면 된다.
+	public void findUserDto() {
+		QMember memberSub = new QMember("memberSub");
+		
+		List<UserDto> result = queryFactory
+			.select(Projections.fields(UserDto.class,
+					member.username.as("name"),
+					ExpressionUtils.as(JPAExpressions
+							.select(memberSub.age.max())
+							.from(memberSub), "age"),
+					member.age))
+			.from(member)
+			.fetch();
+		
+		for (UserDto userDto : result) {
+			System.out.println("userDto = " + userDto);
+		}
+	}
+	
+	@Test
+	// Projections.constructor 방식은 생성자에 넣어준다.
+	// setter 등이 필요 없다.
+	public void findDtoByConstructor() {
+		List<UserDto> result = queryFactory
+			.select(Projections.constructor(UserDto.class,
+					member.username,
+					member.age))
+			.from(member)
+			.fetch();
+		
+		for (UserDto memberDto : result) {
+			System.out.println("memberDto = " + memberDto);
 		}
 	}
 
