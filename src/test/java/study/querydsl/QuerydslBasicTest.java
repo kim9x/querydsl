@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.querydsl.core.BooleanBuilder;
@@ -699,6 +700,65 @@ public class QuerydslBasicTest {
 	
 	private Predicate allEq(String usernameCond, Integer ageCond) {
 		return usernameEq(usernameCond).and(ageEq(ageCond));
+	}
+	
+	@Test
+	@Commit
+	public void bulkUpdate() {
+		
+		// member1 = 10 -> DB member1
+		// member2 = 20 -> DB member2
+		// member3 = 30 -> DB member3
+		// member4 = 40 -> DB member4
+		
+		long count = queryFactory
+			.update(member)
+			.set(member.username, "비회원")
+			.where(member.age.lt(28))
+			.execute();
+		
+		// 벌크 연산 후엔 영속성 컨텍스트와 DB가 일치하지 않기 때문에
+		// 초기화 해주는 것이 좋다.(마음이 편함(?!))
+		em.flush();
+		em.clear();
+			
+		
+		// DB 값은 아래처럼 변경되었지만
+		// 영속성 컨텍스트는 그 전의 값이 유지되어 있다.
+		// 왜냐하면 벌크 연산은 영속성 컨텍스트를 타지 않기 때뮨.
+		// 1 member1 = 10 -> 1 DB 비회원
+		// 2 member2 = 20 -> 2 DB 비회원
+		// 3 member3 = 30 -> 3 DB member3
+		// 4 member4 = 40 -> 4 DB member4
+		
+		// 영속성 컨텍스트는 이전의 값이 유지되므로
+		// 아래 콘솔 로그에서는 member1, member2 으로 이전 값이 계쏙 남아있다.
+		// 영속성 컨텍스트가 우선권을 가지고 DB 값은 버린다.(우선순위가 높음.)
+		List<Member> result = queryFactory
+			.selectFrom(member)
+			.fetch();
+		
+		for (Member member1 : result) {
+			System.out.println("member1 = " + member1);
+		}
+	}
+	
+	@Test
+	public void bulkAdd() {
+		long count = queryFactory
+			.update(member)
+			.set(member.age, member.age.add(1))
+//			.set(member.age, member.age.add(-1))
+//			.set(member.age, member.age.multiply(-1))
+			.execute();
+	}
+	
+	@Test
+	public void bulkDelete() {
+		long count = queryFactory
+			.delete(member)
+			.where(member.age.gt(18))
+			.execute();
 	}
 
 
