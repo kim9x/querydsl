@@ -777,7 +777,7 @@ public class QuerydslBasicTest {
 	
 	@Test
 	public void sqlFunction2() {
-		List<String> result = queryFactory
+		List<String> result =  queryFactory
 			.select(member.username)
 			.from(member)
 //			.where(member.username.eq(Expressions.stringTemplate(
