@@ -11,6 +11,7 @@ import javax.persistence.EntityManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
 import org.springframework.data.repository.support.PageableExecutionUtils;
 
 import com.querydsl.core.QueryResults;
@@ -25,30 +26,56 @@ import study.querydsl.dto.QMemberTeamDto;
 import study.querydsl.entity.Member;
 import study.querydsl.repository.MemberRepositoryCustom;
 
-public class MemberRepositoryImpl implements MemberRepositoryCustom {
+public class MemberRepositoryImpl extends QuerydslRepositorySupport implements MemberRepositoryCustom {
 	
-	private final JPAQueryFactory queryFactory;
-	
-	public MemberRepositoryImpl(EntityManager em) {
-		this.queryFactory = new JPAQueryFactory(em);
+	public MemberRepositoryImpl() {
+		super(Member.class);
+		// TODO Auto-generated constructor stub
 	}
 	
+//	private final JPAQueryFactory queryFactory;
+//	
+//	public MemberRepositoryImpl(EntityManager em) {
+//		this.queryFactory = new JPAQueryFactory(em);
+//	}	
+
 	public List<MemberTeamDto> search(MemberSearchCondition condition) {
-    	return queryFactory
-    			.select(new QMemberTeamDto(
+		
+		EntityManager entityManager = getEntityManager();
+		
+		from(member)
+				.leftJoin(member.team, team)
+				.where(
+						usernameEq(condition.getUsername()),
+                		teamNameEq(condition.getTeamName()),
+                		ageGoe(condition.getAgeGoe()),
+                		ageLoe(condition.getAgeLoe())
+                )
+				.select(new QMemberTeamDto(
                 		member.id.as("memberId"),
                 		member.username,
                 		member.age,
                 		team.id.as("teamId"),
-                		team.name.as("teamName")))
-                .from(member)
-                .leftJoin(member.team, team)
-                .where(
-                		usernameEq(condition.getUsername()),
-                		teamNameEq(condition.getTeamName()),
-                		ageGoe(condition.getAgeGoe()),
-                		ageLoe(condition.getAgeLoe()))
-                .fetch();
+                		team.name.as("teamName"))
+				)
+				.fetch();
+				
+		
+//    	return queryFactory
+//    			.select(new QMemberTeamDto(
+//                		member.id.as("memberId"),
+//                		member.username,
+//                		member.age,
+//                		team.id.as("teamId"),
+//                		team.name.as("teamName")))
+//                .from(member)
+//                .leftJoin(member.team, team)
+//                .where(
+//                		usernameEq(condition.getUsername()),
+//                		teamNameEq(condition.getTeamName()),
+//                		ageGoe(condition.getAgeGoe()),
+//                		ageLoe(condition.getAgeLoe()))
+//                .fetch();
 	}
 
 	@Override
